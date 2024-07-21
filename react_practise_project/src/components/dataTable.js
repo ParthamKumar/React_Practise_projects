@@ -4,8 +4,18 @@ function DataTable() {
   const [formData, setFormData] = useState({ name: "", gender: "", age: "" });
   const [data, setData] = useState([]);
   const [editId, setEditId] = useState(false);
-  const outsideClick = useRef(false)
+  const [searchTerm, setSearchTrem] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const outsideClick = useRef(false);
+  const itemPerPage = 5;
+  const LastItem = currentPage * itemPerPage;
+  const indexOfFirstItem = LastItem - itemPerPage;
 
+  const filteredData = data
+    .filter((item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .slice(indexOfFirstItem, LastItem);
 
   useEffect(() => {
     if (!editId) return;
@@ -13,19 +23,21 @@ function DataTable() {
     selectedItem[0].focus();
   }, [editId]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        outsideClick.current &&
+        !outsideClick.current.contains(event.target)
+      ) {
+        setEditId(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
 
-  useEffect(()=>{
-    const handleClickOutside = (event) =>{
-        if(outsideClick.current && !outsideClick.current.contains(event.target)){
-            setEditId(false)
-        }
-    }
-    document.addEventListener("click",handleClickOutside)
-
-    return ()=>{
-        document.removeEventListener("click",handleClickOutside)
-    }
-  },[])
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
 
   function handleInputChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -51,16 +63,24 @@ function DataTable() {
   }
   // console.log(Date.now())
 
-
   function handleEdit(id, updatedData) {
     if (!editId || editId !== id) {
       return;
     }
-    const updatedList = data.map((item)=>
-    item.id===id?{...item,...updatedData}:item)
-    setData(updatedList)
+    const updatedList = data.map((item) =>
+      item.id === id ? { ...item, ...updatedData } : item
+    );
+    setData(updatedList);
   }
-      console.log(data);
+  //   console.log(data);
+
+  function handleSearch(e) {
+    setSearchTrem(e.target.value);
+  }
+
+  function paginate(pageNumber) {
+    setCurrentPage(pageNumber);
+  }
 
   return (
     <div className="container">
@@ -98,8 +118,8 @@ function DataTable() {
           type="text"
           placeholder="Search"
           name="search-input"
-          value={""}
-          onChange={() => {}}
+          value={searchTerm}
+          onChange={handleSearch}
         />
         <table ref={outsideClick}>
           <thead>
@@ -111,7 +131,7 @@ function DataTable() {
             </tr>
           </thead>
           <tbody>
-            {data.map((item) => (
+            {filteredData.map((item) => (
               <tr key={item.id}>
                 <td
                   id={item.id}
@@ -155,7 +175,16 @@ function DataTable() {
             ))}
           </tbody>
         </table>
-        <div className="pagination"></div>
+        <div className="pagination">
+          {Array.from(
+            { length: Math.ceil(data.length / itemPerPage) },
+            (_, index) => (
+              <button key={index + 1} onClick={() => paginate(index + 1)} style={{backgroundColor:currentPage===index+1&&"lightgreen"}}>
+                {index + 1}
+              </button>
+            )
+          )}
+        </div>
       </div>
     </div>
   );
